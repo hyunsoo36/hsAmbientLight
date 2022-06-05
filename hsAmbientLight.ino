@@ -7,8 +7,10 @@
 #define NEOPIXEL_CONTROL_PIN 3 
 #define NUMPIXELS 144 
 #define STATE_CONTROL_BUTTON 12
-#define BRIGHTNESS_MAX 64
-#define BRIGHTNESS_MIN 16
+#define LIGHT_SENSOR A3
+#define LED_BASIC 13
+static uint8_t BRIGHTNESS_MAX = 64;
+static uint8_t BRIGHTNESS_MIN = 16;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_CONTROL_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -24,12 +26,35 @@ void setup()
 #endif
   // End of trinket special code
 
+  pinMode(LED_BASIC, OUTPUT);  
+  digitalWrite(LED_BASIC, HIGH);
   
   strip.setBrightness(BRIGHTNESS_MAX);
   strip.begin();
   strip.clear();
   strip.show(); // Initialize all pixels to 'off'
-  
+
+  pinMode(LIGHT_SENSOR, INPUT);  
+  float light_value = 0;
+  for(int i = 0; i < 10; i++) {
+    int val = analogRead(LIGHT_SENSOR);
+    light_value += val / 10.0;
+    delay(10);
+  }
+
+  if(light_value > 900) {
+    BRIGHTNESS_MAX = 64;
+    BRIGHTNESS_MIN = 16;
+    blink(1, 100);
+  }
+  else {
+    BRIGHTNESS_MAX = 128;
+    BRIGHTNESS_MIN = 32;
+    blink(2, 100);
+  }
+
+  // Serial.print("avg value : ");
+  // Serial.println(light_value);
 
   pinMode(STATE_CONTROL_BUTTON, INPUT);
   digitalWrite(STATE_CONTROL_BUTTON, INPUT_PULLUP);
@@ -84,7 +109,10 @@ int state = 0;
 void loop()
 {
   sleep_cpu();
-  //Serial.println(state);
+  
+  // Serial.print("state : ");
+  // Serial.println(state);
+
   int button_state = digitalRead(STATE_CONTROL_BUTTON);
   if(button_state == HIGH) {
     delay(100);
@@ -120,7 +148,14 @@ void loop()
   //  rainbow(20);
   //  rainbowCycle(20);
 }
-
+void blink(int count, int interval_ms) {
+  for(int i = 0; i < count; i++) {
+    digitalWrite(LED_BASIC, HIGH);
+    delay(interval_ms);
+    digitalWrite(LED_BASIC, LOW);
+    delay(interval_ms);
+  }
+}
 void click_control_button(void) 
 {
   state++;
